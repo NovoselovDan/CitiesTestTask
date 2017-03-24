@@ -131,6 +131,7 @@
                     <connections>
                         <outlet property="tableView" destination="rKJ-ge-bte" id="N5n-NL-swQ"/>
                         <outlet property="toolbar" destination="Tlq-NW-jsr" id="ySu-2G-XhC"/>
+                        <outlet property="toolbarBottomConstraint" destination="rUb-vp-W1P" id="LXW-GN-V75"/>
                         <segue destination="0vV-kQ-Xgm" kind="presentation" identifier="authVC" id="qf6-ej-Hi0"/>
                         <segue destination="JjE-5y-rz4" kind="show" identifier="addCityVC" id="Ue7-gc-PlI"/>
                     </connections>

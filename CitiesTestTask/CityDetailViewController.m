@@ -23,7 +23,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    [self configureView];
+    [self setUpMainAppereance];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -53,9 +53,13 @@
 */
 
 
-- (void)configureView {
+- (void)setUpMainAppereance {
     _aboutTextView.scrollEnabled = NO;
     [_aboutTextView setText:[self cityDescriptionString]];
+    if (_city) {
+        _titleLabel.text = _city.title;
+        _areaLabel.text = _city.area ? _city.area : @"";
+    }
 }
 
 - (NSString *)cityDescriptionString {

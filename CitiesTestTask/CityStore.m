@@ -63,17 +63,6 @@
     _needsUpdateUsingCities = NO;
 }
 
-/*
-- (City *)createNewCity {
-    City *newCity = [City new];
-    newCity.title = [[NSDate date] description];
-    newCity.cityID = @(_allCities.count + 1000);
-    [_allCities addObject:newCity];
-    
-    return newCity;
-}
-*/
-
 - (void)addCity:(City *)city {
     if (![_userCities containsObject:city]) {
         [_userCities addObject:city];
@@ -91,7 +80,12 @@
     if ([_userCities containsObject:city]) {
         [_userCities removeObject:city];
         _needsUpdateUsingCities = YES;
+    } else if ([_vkCities containsObject:city]) {
+        [_vkCities removeObject:city];
+        _needsUpdateUsingCities = YES;
     }
+    
+    [self updateUsingCities];
 }
 
 

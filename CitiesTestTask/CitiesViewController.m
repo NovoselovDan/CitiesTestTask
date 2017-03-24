@@ -7,6 +7,7 @@
 //
 
 #import "CitiesViewController.h"
+#import "CityDetailViewController.h"
 #import "UserSession.h"
 
 @interface CitiesViewController () <UITableViewDelegate, UITableViewDataSource, UISearchControllerDelegate, UISearchResultsUpdating, UISearchBarDelegate>
@@ -25,6 +26,7 @@
 
 
 @property (weak, nonatomic) IBOutlet UIToolbar *toolbar;
+@property (weak, nonatomic) IBOutlet NSLayoutConstraint *toolbarBottomConstraint;
 
 
 @end
@@ -49,10 +51,19 @@
     
     [self setUpMainAppereance];
     [self initFooterView];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillShow:)
+                                                 name:UIKeyboardWillShowNotification
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillHide:)
+                                                 name:UIKeyboardWillHideNotification
+                                               object:nil];
+    
     // Uncomment the following line to preserve selection between presentations.
     // self.clearsSelectionOnViewWillAppear = NO;
-    
-    
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -147,7 +158,7 @@
 #pragma mark - UI Search Control methods
 
 - (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
-    if ([searchController.searchBar.text isEqualToString:@""]) {
+    if (!searchController.active && [searchController.searchBar.text isEqualToString:@""]) {
         [self resumeFetching];
         [_tableView reloadData];
     } else {
@@ -254,54 +265,58 @@
 }
 
 - (void)loadCities {
-    _isDataLoading = YES;
-    [_cityStore fetchCitiesFirst:YES completion:^(NSArray *fetchedCities, BOOL didLoadFullList, NSError *error) {
-        [_refresh endRefreshing];
-        _isDataLoading = NO;
-        if (!error) {
-            _didLoadFullList = didLoadFullList;
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (!_didLoadFullList) {
-                    _tableView.tableFooterView = _footerView;
-                    [(UIActivityIndicatorView *)[_footerView viewWithTag:10] startAnimating];
-                }
-                [_tableView reloadData];
-            });
-        } else {
-            NSLog(@"loadCities error: %@", error.localizedDescription);
-        }
-    }];
+    if ([[UserSession currentSession] isAuthorized]) {
+        _isDataLoading = YES;
+        [_cityStore fetchCitiesFirst:YES completion:^(NSArray *fetchedCities, BOOL didLoadFullList, NSError *error) {
+            [_refresh endRefreshing];
+            _isDataLoading = NO;
+            if (!error) {
+                _didLoadFullList = didLoadFullList;
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (!_didLoadFullList) {
+                        _tableView.tableFooterView = _footerView;
+                        [(UIActivityIndicatorView *)[_footerView viewWithTag:10] startAnimating];
+                    }
+                    [_tableView reloadData];
+                });
+            } else {
+                NSLog(@"loadCities error: %@", error.localizedDescription);
+            }
+        }];
+    }
 }
 
 - (void)loadNextCities {
-    _isDataLoading =YES;
-    [_cityStore fetchCitiesFirst:NO completion:^(NSArray *fetchedCities, BOOL didLoadFullList, NSError *error) {
-        _isDataLoading = NO;
-        
-        if (!error) {
-            _didLoadFullList = didLoadFullList;
+    if ([[UserSession currentSession] isAuthorized]) {
+        _isDataLoading =YES;
+        [_cityStore fetchCitiesFirst:NO completion:^(NSArray *fetchedCities, BOOL didLoadFullList, NSError *error) {
+            _isDataLoading = NO;
             
-            NSInteger lastIndex = [[_cityStore allCites] indexOfObject:[fetchedCities firstObject]];
-            NSMutableArray *indexPaths = [NSMutableArray new];
-            for (int i=0; i < fetchedCities.count; i++) {
-                [indexPaths addObject:[NSIndexPath indexPathForRow:(lastIndex + i) inSection:0]];
+            if (!error) {
+                _didLoadFullList = didLoadFullList;
+                
+                NSInteger lastIndex = [[_cityStore allCites] indexOfObject:[fetchedCities firstObject]];
+                NSMutableArray *indexPaths = [NSMutableArray new];
+                for (int i=0; i < fetchedCities.count; i++) {
+                    [indexPaths addObject:[NSIndexPath indexPathForRow:(lastIndex + i) inSection:0]];
+                }
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (didLoadFullList) {
+                        [_tableView setTableFooterView:[[UIView alloc] initWithFrame:CGRectZero]];
+                    }
+                    [(UIActivityIndicatorView *)[_tableView.tableFooterView viewWithTag:10] stopAnimating];
+                    [_tableView insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationBottom];
+                });
+                
+                //[_tableView reloadData];
+            } else {
+                NSLog(@"loadCities error: %@", error.localizedDescription);
             }
             
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (didLoadFullList) {
-                    [_tableView setTableFooterView:[[UIView alloc] initWithFrame:CGRectZero]];
-                }
-                [(UIActivityIndicatorView *)[_tableView.tableFooterView viewWithTag:10] stopAnimating];
-                [_tableView insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationBottom];
-            });
-            
-            //[_tableView reloadData];
-        } else {
-            NSLog(@"loadCities error: %@", error.localizedDescription);
-        }
-        
-    }];
+        }];
+    }
 }
 
 - (void)stopFething {
@@ -317,14 +332,48 @@
     }
 }
 
-/*
+#pragma mark - Keyboard appearance handling
+
+- (void)keyboardWillShow:(NSNotification *)notification
+{
+    CGSize keyboardSize = [[[notification userInfo] objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
+    CGFloat keyboardHeight = UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation]) ? keyboardSize.height : keyboardSize.width;
+    UIEdgeInsets contentInsets = contentInsets = UIEdgeInsetsMake(0.0, 0.0, keyboardHeight, 0.0);
+  
+    
+    NSNumber *rate = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey];
+    [UIView animateWithDuration:rate.floatValue animations:^{
+        _toolbarBottomConstraint.constant = keyboardHeight;
+        self.tableView.contentInset = contentInsets;
+        self.tableView.scrollIndicatorInsets = contentInsets;
+    }];
+}
+
+- (void)keyboardWillHide:(NSNotification *)notification
+{
+    NSNumber *rate = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey];
+    [UIView animateWithDuration:rate.floatValue animations:^{
+        _toolbarBottomConstraint.constant = 0;
+        self.tableView.contentInset = UIEdgeInsetsZero;
+        self.tableView.scrollIndicatorInsets = UIEdgeInsetsZero;
+    }];
+}
+
+
  #pragma mark - Navigation
- 
- // In a storyboard-based application, you will often want to do a little preparation before navigation
- - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
- // Get the new view controller using [segue destinationViewController].
- // Pass the selected object to the new view controller.
- }
- */
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    if ([segue.identifier isEqualToString:@"detailVC"]) {
+        CityDetailViewController *detailVC = (CityDetailViewController *)segue.destinationViewController;
+        
+        NSInteger index = [_tableView indexPathForSelectedRow].row;
+        if (_searchController.active && ![_searchController.searchBar.text isEqualToString:@""]) {
+            detailVC.city = _filteredCities[index];
+        } else {
+            detailVC.city = [_cityStore allCites][index];
+        }
+    }
+}
+
 
 @end

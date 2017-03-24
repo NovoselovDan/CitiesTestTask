@@ -13,7 +13,6 @@
 
 - (NSArray *)allCites;
 
-//- (City *)createNewCity;
 - (void)addCity:(City *)city;
 - (void)addCities:(NSArray<City *> *)cities;
 - (void)removeCity:(City *)city;
