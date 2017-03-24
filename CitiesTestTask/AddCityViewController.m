@@ -12,8 +12,6 @@
 
 @property (strong, nonatomic) UISearchController *searchController;
 
-@property (weak, nonatomic) IBOutlet UITableView *tableView;
-
 @end
 
 @implementation AddCityViewController

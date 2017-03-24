@@ -197,7 +197,8 @@
 
 - (IBAction)loginButtonAction:(id)sender {
     if (_isAuthenticated) {
-        _isAuthenticated = NO;
+        [[UserSession currentSession] logout];
+        _isAuthenticated = [[UserSession currentSession] isAuthorized];
         [self updateView];
     } else {
         [self performSegueWithIdentifier:@"authVC" sender:self];
@@ -284,6 +285,8 @@
                 NSLog(@"loadCities error: %@", error.localizedDescription);
             }
         }];
+    } else {
+        [_refresh endRefreshing];
     }
 }
 
@@ -316,17 +319,19 @@
             }
             
         }];
+    } else {
+        _isDataLoading = NO;
+        _didLoadFullList = YES;
     }
 }
 
 - (void)stopFething {
-    _isDataLoading = NO;
     [(UIActivityIndicatorView *)[_tableView.tableFooterView viewWithTag:10] stopAnimating];
     _tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
 }
 
 - (void)resumeFetching {
-    if (!_didLoadFullList) {
+    if (_isDataLoading) {
         _tableView.tableFooterView = _footerView;
         [(UIActivityIndicatorView *)[_tableView.tableFooterView viewWithTag:10] startAnimating];
     }
@@ -338,14 +343,10 @@
 {
     CGSize keyboardSize = [[[notification userInfo] objectForKey:UIKeyboardFrameBeginUserInfoKey] CGRectValue].size;
     CGFloat keyboardHeight = UIInterfaceOrientationIsPortrait([[UIApplication sharedApplication] statusBarOrientation]) ? keyboardSize.height : keyboardSize.width;
-    UIEdgeInsets contentInsets = contentInsets = UIEdgeInsetsMake(0.0, 0.0, keyboardHeight, 0.0);
-  
-    
+
     NSNumber *rate = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey];
     [UIView animateWithDuration:rate.floatValue animations:^{
         _toolbarBottomConstraint.constant = keyboardHeight;
-        self.tableView.contentInset = contentInsets;
-        self.tableView.scrollIndicatorInsets = contentInsets;
     }];
 }
 
@@ -354,8 +355,6 @@
     NSNumber *rate = notification.userInfo[UIKeyboardAnimationDurationUserInfoKey];
     [UIView animateWithDuration:rate.floatValue animations:^{
         _toolbarBottomConstraint.constant = 0;
-        self.tableView.contentInset = UIEdgeInsetsZero;
-        self.tableView.scrollIndicatorInsets = UIEdgeInsetsZero;
     }];
 }
 
