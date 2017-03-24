@@ -10,4 +10,8 @@
 
 @interface VKAPI : NSObject
 
++ (NSURL *)authURL;
++ (NSURL *)getCitiesWithOffset:(NSNumber *)offset andCount:(NSNumber *)count;
+
++ (NSArray *)citiesFromJSON:(NSData *)data;
 @end

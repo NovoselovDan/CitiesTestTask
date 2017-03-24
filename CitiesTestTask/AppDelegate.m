@@ -7,6 +7,7 @@
 //
 
 #import "AppDelegate.h"
+#import "CitiesViewController.h"
 
 @interface AppDelegate ()
 
@@ -16,7 +17,12 @@
 
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
+    
+    //if logged in
+    UINavigationController *navvc = (UINavigationController *) _window.rootViewController;
+    CitiesViewController *vc = (CitiesViewController *)navvc.topViewController;
+    vc.cityStore = [[CityStore alloc] init];
+    
     return YES;
 }
 

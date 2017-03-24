@@ -7,7 +7,18 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "City.h"
 
 @interface CityStore : NSObject
+
+- (NSArray *)allCites;
+
+//- (City *)createNewCity;
+- (void)addCity:(City *)city;
+- (void)addCities:(NSArray<City *> *)cities;
+- (void)removeCity:(City *)city;
+
+- (void)fetchCitiesFirst:(BOOL)firstFetch completion:(void (^)(NSArray *fetchedCities, BOOL didLoadFullList, NSError *error))completion;
+
 
 @end

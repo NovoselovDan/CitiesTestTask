@@ -7,7 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "CityStore.h"
 
-@interface CitiesViewController : UITableViewController
+@interface CitiesViewController : UIViewController
+
+@property (strong, nonatomic) CityStore *cityStore;
 
 @end
